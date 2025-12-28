@@ -1,5 +1,6 @@
-// app.js - simplified version WITHOUT admin modal/login
-// Replace GAS_ENDPOINT with your deployed Google Apps Script web app URL (or leave empty to skip sending)
+// app.js - Phiên bản BỎ kiểm tra thời gian (open/close)
+// Ghi đè file app.js hiện tại bằng nội dung này để tắt hoàn toàn chức năng kiểm tra thời gian.
+// Thay GAS_ENDPOINT nếu bạn muốn gửi kết quả lên Google Apps Script.
 const GAS_ENDPOINT = 'https://script.google.com/macros/s/REPLACE_WITH_YOUR_DEPLOY_ID/exec';
 
 let questions = []; // {id, question, A,B,C,D,answer}
@@ -16,12 +17,14 @@ document.addEventListener('DOMContentLoaded', () => {
   loadCSV('questions.csv')
     .then(data => {
       questions = data;
-      document.getElementById('status').textContent = `Đã load ${questions.length} câu hỏi.`;
+      const statusEl = document.getElementById('status');
+      if(statusEl) statusEl.textContent = `Đã load ${questions.length} câu hỏi.`;
       console.log('[Quiz] Loaded questions:', questions.length);
     })
     .catch(err => {
       console.error('[Quiz] Lỗi load questions.csv', err);
-      document.getElementById('status').textContent = 'Lỗi load câu hỏi. Mở Console để xem chi tiết.';
+      const statusEl = document.getElementById('status');
+      if(statusEl) statusEl.textContent = 'Lỗi load câu hỏi. Mở Console để xem chi tiết.';
     });
 });
 
@@ -39,12 +42,13 @@ function initUI(){
     restartBtn.addEventListener('click', () => {
       document.getElementById('result').classList.add('hidden');
       document.getElementById('setup').classList.remove('hidden');
-      document.getElementById('status').textContent = `Đã load ${questions.length} câu hỏi.`;
+      const statusEl = document.getElementById('status');
+      if(statusEl) statusEl.textContent = `Đã load ${questions.length} câu hỏi.`;
     });
   }
 }
 
-// CSV loader (supports quoted fields)
+/* ================= CSV loading & parsing ================= */
 function loadCSV(url){
   return fetch(url).then(r => {
     if(!r.ok) throw new Error('Fetch CSV failed: ' + r.status);
@@ -55,7 +59,8 @@ function loadCSV(url){
 function parseCSV(text){
   const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
   if(lines.length === 0) return [];
-  const header = csvLineToArray(lines.shift());
+  // assume header present
+  lines.shift();
   return lines.map(line => {
     const cols = csvLineToArray(line);
     return {
@@ -94,18 +99,22 @@ function csvLineToArray(line){
   return res;
 }
 
+/* ================= Quiz lifecycle (KHÔNG có kiểm tra thời gian) ================= */
 function startQuiz(numQuestions, timeMinutes){
   if(!Array.isArray(questions) || questions.length === 0){
     alert('Chưa có câu hỏi. Kiểm tra file questions.csv');
     return;
   }
+
+  // TẮT kiểm tra open/close: bắt đầu luôn khi người dùng nhấn Start
   quizQuestions = shuffleArray(questions.slice()).slice(0, Math.min(numQuestions, questions.length));
   state = { current: 0, answers: {}, timeLeft: Math.max(1, Math.floor(timeMinutes)) * 60, timerInterval: null };
 
   document.getElementById('setup').classList.add('hidden');
   document.getElementById('quiz').classList.remove('hidden');
   renderQuestion();
-  document.getElementById('timeRemaining').textContent = formatTime(state.timeLeft);
+  const tr = document.getElementById('timeRemaining');
+  if(tr) tr.textContent = formatTime(state.timeLeft);
   startTimer();
 }
 
@@ -136,19 +145,19 @@ function renderQuestion(){
   });
   qa.appendChild(opts);
 
-  document.getElementById('prevBtn').onclick = () => {
-    if(state.current > 0){ state.current--; renderQuestion(); }
-  };
-  document.getElementById('nextBtn').onclick = () => {
-    if(state.current < quizQuestions.length - 1){ state.current++; renderQuestion(); }
-  };
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
   const submitBtn = document.getElementById('submitBtn');
+
+  if(prevBtn) prevBtn.onclick = () => { if(state.current > 0){ state.current--; renderQuestion(); } };
+  if(nextBtn) nextBtn.onclick = () => { if(state.current < quizQuestions.length - 1){ state.current++; renderQuestion(); } };
   if(submitBtn){
     submitBtn.disabled = false;
     submitBtn.onclick = submitQuiz;
   }
 }
 
+/* ================= Timer & submit ================= */
 function startTimer(){
   const timeEl = document.getElementById('timeRemaining');
   clearInterval(state.timerInterval);
@@ -184,7 +193,8 @@ function submitQuiz(){
   document.getElementById('quiz').classList.add('hidden');
   const resultDiv = document.getElementById('result');
   resultDiv.classList.remove('hidden');
-  document.getElementById('score').innerHTML = `Bạn được ${score} / ${quizQuestions.length}`;
+  const scoreEl = document.getElementById('score');
+  if(scoreEl) scoreEl.innerHTML = `Bạn được ${score} / ${quizQuestions.length}`;
 
   const payload = {
     timestamp: new Date().toISOString(),
@@ -216,16 +226,16 @@ function submitQuiz(){
   }
 }
 
-/* Utility */
+/* ================= Utility ================= */
 function shuffleArray(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
 function formatTime(sec){ const m = Math.floor(sec/60); const s = sec%60; return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; }
 function escapeHtml(s){ if(!s) return ''; return s.replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
 
-// Expose debug helpers
+// Debug helpers
 window.quizDebug = {
   startQuiz,
   questions,
   quizQuestions,
   state
 };
-console.log('[Quiz] app.js loaded. Use quizDebug in Console for quick actions.');
+console.log('[Quiz] app.js loaded (NO time checks).');
