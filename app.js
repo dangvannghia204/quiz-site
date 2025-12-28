@@ -1,241 +1,194 @@
-// app.js - Phiên bản BỎ kiểm tra thời gian (open/close)
-// Ghi đè file app.js hiện tại bằng nội dung này để tắt hoàn toàn chức năng kiểm tra thời gian.
-// Thay GAS_ENDPOINT nếu bạn muốn gửi kết quả lên Google Apps Script.
+// app.js - UI-enhanced version (no admin modal)
+// Update GAS_ENDPOINT to your Google Apps Script Web App if needed
 const GAS_ENDPOINT = 'https://script.google.com/macros/s/REPLACE_WITH_YOUR_DEPLOY_ID/exec';
 
-let questions = []; // {id, question, A,B,C,D,answer}
+let questions = [];
 let quizQuestions = [];
-let state = {
-  current: 0,
-  answers: {},
-  timeLeft: 0,
-  timerInterval: null
-};
+let state = { current:0, answers:{}, timeLeft:0, timerInterval:null };
 
 document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('year').textContent = new Date().getFullYear();
   initUI();
-  loadCSV('questions.csv')
-    .then(data => {
-      questions = data;
-      const statusEl = document.getElementById('status');
-      if(statusEl) statusEl.textContent = `Đã load ${questions.length} câu hỏi.`;
-      console.log('[Quiz] Loaded questions:', questions.length);
-    })
-    .catch(err => {
-      console.error('[Quiz] Lỗi load questions.csv', err);
-      const statusEl = document.getElementById('status');
-      if(statusEl) statusEl.textContent = 'Lỗi load câu hỏi. Mở Console để xem chi tiết.';
-    });
+  loadCSV('questions.csv').then(data=>{
+    questions = data;
+    document.getElementById('status').textContent = `Đã load ${questions.length} câu hỏi.`;
+  }).catch(err=>{
+    console.error('Failed to load CSV', err);
+    document.getElementById('status').textContent = 'Lỗi load câu hỏi (Console).';
+  });
 });
 
 function initUI(){
   const startBtn = document.getElementById('startBtn');
+  const demoBtn = document.getElementById('demoBtn');
   const restartBtn = document.getElementById('restartBtn');
-  if(startBtn){
-    startBtn.addEventListener('click', () => {
-      const numQ = Number(document.getElementById('numQuestions').value) || 10;
-      const timeMin = Number(document.getElementById('timeLimit').value) || 15;
-      startQuiz(numQ, timeMin);
-    });
-  }
-  if(restartBtn){
-    restartBtn.addEventListener('click', () => {
-      document.getElementById('result').classList.add('hidden');
-      document.getElementById('setup').classList.remove('hidden');
-      const statusEl = document.getElementById('status');
-      if(statusEl) statusEl.textContent = `Đã load ${questions.length} câu hỏi.`;
-    });
-  }
+
+  startBtn?.addEventListener('click', () => {
+    const n = Number(document.getElementById('numQuestions').value) || 10;
+    const t = Number(document.getElementById('timeLimit').value) || 15;
+    startQuiz(n, t);
+  });
+
+  demoBtn?.addEventListener('click', () => {
+    // quick demo: 3 questions 5 minutes
+    startQuiz(3, 5);
+  });
+
+  restartBtn?.addEventListener('click', () => {
+    document.getElementById('result').classList.add('hidden');
+    document.getElementById('setup').classList.remove('hidden');
+  });
 }
 
-/* ================= CSV loading & parsing ================= */
+/* CSV loader (robust for quoted fields) */
 function loadCSV(url){
   return fetch(url).then(r => {
-    if(!r.ok) throw new Error('Fetch CSV failed: ' + r.status);
+    if(!r.ok) throw new Error('Fetch failed: ' + r.status);
     return r.text();
   }).then(parseCSV);
 }
 
 function parseCSV(text){
-  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
-  if(lines.length === 0) return [];
-  // assume header present
+  const lines = text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+  if(lines.length===0) return [];
+  // assume header row present
   lines.shift();
   return lines.map(line => {
     const cols = csvLineToArray(line);
     return {
-      id: (cols[0] || '').trim(),
-      question: (cols[1] || '').trim(),
-      A: (cols[2] || '').trim(),
-      B: (cols[3] || '').trim(),
-      C: (cols[4] || '').trim(),
-      D: (cols[5] || '').trim(),
-      answer: (cols[6] || '').trim()
+      id: (cols[0]||'').trim(),
+      question: (cols[1]||'').trim(),
+      A: (cols[2]||'').trim(),
+      B: (cols[3]||'').trim(),
+      C: (cols[4]||'').trim(),
+      D: (cols[5]||'').trim(),
+      answer: (cols[6]||'').trim()
     };
   });
 }
 
 function csvLineToArray(line){
-  const res = [];
-  let cur = '';
-  let inQuotes = false;
+  const out = []; let cur=''; let inQ=false;
   for(let i=0;i<line.length;i++){
     const ch = line[i];
     if(ch === '"'){
-      if(inQuotes && i+1 < line.length && line[i+1] === '"'){
-        cur += '"';
-        i++;
-      } else {
-        inQuotes = !inQuotes;
-      }
-    } else if(ch === ',' && !inQuotes){
-      res.push(cur);
-      cur = '';
-    } else {
-      cur += ch;
-    }
+      if(inQ && i+1<line.length && line[i+1]==='"'){ cur+='"'; i++; }
+      else inQ = !inQ;
+    } else if(ch === ',' && !inQ){ out.push(cur); cur=''; }
+    else cur += ch;
   }
-  res.push(cur);
-  return res;
+  out.push(cur);
+  return out;
 }
 
-/* ================= Quiz lifecycle (KHÔNG có kiểm tra thời gian) ================= */
+/* Quiz lifecycle with improved UI updates */
 function startQuiz(numQuestions, timeMinutes){
-  if(!Array.isArray(questions) || questions.length === 0){
-    alert('Chưa có câu hỏi. Kiểm tra file questions.csv');
-    return;
-  }
-
-  // TẮT kiểm tra open/close: bắt đầu luôn khi người dùng nhấn Start
+  if(!Array.isArray(questions) || questions.length===0){ alert('Chưa có câu hỏi. Kiểm tra file questions.csv'); return; }
   quizQuestions = shuffleArray(questions.slice()).slice(0, Math.min(numQuestions, questions.length));
-  state = { current: 0, answers: {}, timeLeft: Math.max(1, Math.floor(timeMinutes)) * 60, timerInterval: null };
+  state = { current:0, answers:{}, timeLeft: Math.max(1, Math.floor(timeMinutes))*60, timerInterval:null };
 
   document.getElementById('setup').classList.add('hidden');
   document.getElementById('quiz').classList.remove('hidden');
+  document.getElementById('result').classList.add('hidden');
+
+  updateProgress();
   renderQuestion();
-  const tr = document.getElementById('timeRemaining');
-  if(tr) tr.textContent = formatTime(state.timeLeft);
+  document.getElementById('timeRemaining').textContent = formatTime(state.timeLeft);
   startTimer();
 }
 
 function renderQuestion(){
   const q = quizQuestions[state.current];
-  const qa = document.getElementById('questionArea');
-  qa.innerHTML = '';
-  if(!q){
-    qa.innerHTML = '<p>Không tìm thấy câu hỏi.</p>';
-    return;
-  }
-  const qdiv = document.createElement('div');
-  qdiv.className = 'question';
-  qdiv.innerHTML = `<h3>Câu ${state.current+1} / ${quizQuestions.length}</h3><p>${escapeHtml(q.question)}</p>`;
-  qa.appendChild(qdiv);
+  const area = document.getElementById('questionArea');
+  area.innerHTML = '';
+  if(!q){ area.innerHTML = '<p>Không tìm thấy câu hỏi.</p>'; return; }
 
-  const opts = document.createElement('div');
-  opts.className = 'options';
-  ['A','B','C','D'].forEach(letter => {
-    const label = document.createElement('label');
+  const qWrap = document.createElement('div'); qWrap.className='question';
+  qWrap.innerHTML = `<p class="qtext">${escapeHtml(q.question)}</p>`;
+  area.appendChild(qWrap);
+
+  const opts = document.createElement('div'); opts.className='options';
+  ['A','B','C','D'].forEach(letter=>{
+    const lbl = document.createElement('label');
     const checked = state.answers[q.id] === letter ? 'checked' : '';
-    label.innerHTML = `<input type="radio" name="opt" value="${letter}" ${checked}/> <strong>${letter}</strong>. ${escapeHtml(q[letter] || '')}`;
-    const input = label.querySelector('input');
-    input.addEventListener('change', () => {
+    lbl.innerHTML = `<input type="radio" name="opt" value="${letter}" ${checked} aria-label="Đáp án ${letter}"> <strong>${letter}.</strong> ${escapeHtml(q[letter] || '')}`;
+    lbl.addEventListener('click', ()=> {
       state.answers[q.id] = letter;
+      // smooth visual feedback: add selected class
+      // remove selected class from siblings
+      Array.from(opts.querySelectorAll('label')).forEach(l=>l.classList.remove('selected'));
+      lbl.classList.add('selected');
     });
-    opts.appendChild(label);
+    opts.appendChild(lbl);
   });
-  qa.appendChild(opts);
+  area.appendChild(opts);
 
-  const prevBtn = document.getElementById('prevBtn');
-  const nextBtn = document.getElementById('nextBtn');
-  const submitBtn = document.getElementById('submitBtn');
-
-  if(prevBtn) prevBtn.onclick = () => { if(state.current > 0){ state.current--; renderQuestion(); } };
-  if(nextBtn) nextBtn.onclick = () => { if(state.current < quizQuestions.length - 1){ state.current++; renderQuestion(); } };
-  if(submitBtn){
-    submitBtn.disabled = false;
-    submitBtn.onclick = submitQuiz;
-  }
+  // nav handlers
+  document.getElementById('prevBtn').onclick = () => { if(state.current>0){ state.current--; renderQuestion(); updateProgress(); } };
+  document.getElementById('nextBtn').onclick = () => { if(state.current < quizQuestions.length-1){ state.current++; renderQuestion(); updateProgress(); } };
+  document.getElementById('submitBtn').onclick = submitQuiz;
+  updateProgress();
 }
 
-/* ================= Timer & submit ================= */
+function updateProgress(){
+  const idx = state.current + 1;
+  const total = quizQuestions.length || 1;
+  const pct = Math.round((idx-1)/(total) * 100);
+  document.getElementById('progressText').textContent = `Câu ${idx}/${total}`;
+  document.getElementById('progressBar').style.width = `${Math.min(100, Math.round((idx/total)*100))}%`;
+}
+
+/* Timer and submit */
 function startTimer(){
-  const timeEl = document.getElementById('timeRemaining');
   clearInterval(state.timerInterval);
-  state.timerInterval = setInterval(() => {
-    if(state.timeLeft <= 0){
-      clearInterval(state.timerInterval);
-      alert('Hết giờ, hệ thống sẽ tự động nộp bài.');
-      submitQuiz();
-      return;
-    }
+  const timeEl = document.getElementById('timeRemaining');
+  state.timerInterval = setInterval(()=>{
+    if(state.timeLeft <= 0){ clearInterval(state.timerInterval); alert('Hết giờ, tự động nộp bài.'); submitQuiz(); return; }
     state.timeLeft--;
     if(timeEl) timeEl.textContent = formatTime(state.timeLeft);
-  }, 1000);
+  },1000);
 }
 
 function submitQuiz(){
   clearInterval(state.timerInterval);
-  const submitBtn = document.getElementById('submitBtn');
-  if(submitBtn) submitBtn.disabled = true;
+  const submitBtn = document.getElementById('submitBtn'); if(submitBtn) submitBtn.disabled = true;
 
   let correct = 0;
-  const answersArray = [];
-  quizQuestions.forEach(q => {
-    const selected = state.answers[q.id] || '';
-    if(selected && selected === q.answer) correct++;
-    answersArray.push({id: q.id, selected});
+  const answersArr = [];
+  quizQuestions.forEach(q=>{
+    const sel = state.answers[q.id] || '';
+    if(sel && sel === q.answer) correct++;
+    answersArr.push({id:q.id, selected:sel});
   });
 
   const score = correct;
-  const candidateName = document.getElementById('candidateName')?.value || 'Anonymous';
-  const candidateEmail = document.getElementById('candidateEmail')?.value || '';
+  const name = document.getElementById('candidateName')?.value || 'Anonymous';
+  const email = document.getElementById('candidateEmail')?.value || '';
 
   document.getElementById('quiz').classList.add('hidden');
-  const resultDiv = document.getElementById('result');
-  resultDiv.classList.remove('hidden');
-  const scoreEl = document.getElementById('score');
-  if(scoreEl) scoreEl.innerHTML = `Bạn được ${score} / ${quizQuestions.length}`;
+  document.getElementById('result').classList.remove('hidden');
+  document.getElementById('score').textContent = `Bạn được ${score} / ${quizQuestions.length}`;
 
-  const payload = {
-    timestamp: new Date().toISOString(),
-    name: candidateName,
-    email: candidateEmail,
-    score,
-    total: quizQuestions.length,
-    answers: answersArray
-  };
+  const payload = { timestamp: new Date().toISOString(), name, email, score, total: quizQuestions.length, answers: answersArr };
 
   if(GAS_ENDPOINT && GAS_ENDPOINT.indexOf('REPLACE_WITH') === -1){
     fetch(GAS_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    }).then(r => {
-      if(!r.ok) throw new Error('GAS response ' + r.status);
-      return r.json();
-    }).then(resp => {
-      console.log('[Quiz] GAS response', resp);
-      alert('Kết quả đã được lưu.');
-    }).catch(err => {
-      console.error('[Quiz] Không lưu được kết quả:', err);
-      alert('Không lưu được kết quả lên server: ' + err + '\n(Xem Console để biết chi tiết)');
+      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+    }).then(r=>r.json()).then(res=>{
+      console.log('GAS response', res);
+      // optionally show download link if server returns file url
+    }).catch(err=>{
+      console.warn('GAS send failed', err);
     });
   } else {
-    console.warn('[Quiz] GAS_ENDPOINT chưa đặt - kết quả không gửi.');
-    alert('Kết quả hiển thị cục bộ (GAS_ENDPOINT chưa được cấu hình).');
+    console.log('GAS_ENDPOINT not configured, skipping send.', payload);
   }
 }
 
-/* ================= Utility ================= */
+/* Utilities */
 function shuffleArray(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
 function formatTime(sec){ const m = Math.floor(sec/60); const s = sec%60; return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; }
 function escapeHtml(s){ if(!s) return ''; return s.replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
 
-// Debug helpers
-window.quizDebug = {
-  startQuiz,
-  questions,
-  quizQuestions,
-  state
-};
-console.log('[Quiz] app.js loaded (NO time checks).');
+window.quizDebug = { startQuiz, questions, quizQuestions, state };
+console.log('Quiz UI-enhanced loaded');
