@@ -3,43 +3,94 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Quiz Trắc Nghiệm</title>
+  <title>Web Trắc Nghiệm</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="container">
-    <header>
-      <h1>Web Trắc Nghiệm</h1>
-      <div id="status">Đang tải...</div>
-    </header>
+  <header class="site-header">
+    <div class="container header-inner">
+      <div class="brand">
+        <h1>Quiz<span class="accent">Pro</span></h1>
+        <p class="tagline">Web trắc nghiệm — nhanh, gọn, chuyên nghiệp</p>
+      </div>
+      <div class="meta">
+        <div id="status" class="status">Đang tải...</div>
+      </div>
+    </div>
+  </header>
 
-    <main id="main">
-      <div id="setup" class="card">
-        <h2>Cấu hình bài thi</h2>
-        <label>Số câu hỏi: <input id="numQuestions" type="number" min="1" value="10" /></label><br/>
-        <label>Thời gian (phút): <input id="timeLimit" type="number" min="1" value="15" /></label><br/>
-        <label>Tên thí sinh: <input id="candidateName" type="text" /></label><br/>
-        <label>Email (tuỳ chọn): <input id="candidateEmail" type="email" /></label><br/>
-        <button id="startBtn">Bắt đầu làm bài</button>
+  <main class="container main-content" id="main">
+    <section class="card control-card" id="setup">
+      <h2 class="card-title">Cấu hình bài thi</h2>
+
+      <div class="form-row">
+        <label for="numQuestions">Số câu hỏi</label>
+        <input id="numQuestions" type="number" min="1" value="10" />
       </div>
 
-      <div id="quiz" class="card hidden">
-        <div id="timer">Thời gian: <span id="timeRemaining">00:00</span></div>
-        <div id="questionArea"></div>
-        <div id="nav">
-          <button id="prevBtn" class="secondary">Trước</button>
-          <button id="nextBtn" class="secondary">Sau</button>
-          <button id="submitBtn">Nộp bài</button>
+      <div class="form-row">
+        <label for="timeLimit">Thời gian (phút)</label>
+        <input id="timeLimit" type="number" min="1" value="15" />
+      </div>
+
+      <div class="form-row">
+        <label for="candidateName">Tên thí sinh</label>
+        <input id="candidateName" type="text" placeholder="Họ và tên" />
+      </div>
+
+      <div class="form-row">
+        <label for="candidateEmail">Email (tuỳ chọn)</label>
+        <input id="candidateEmail" type="email" placeholder="abc@domain.com" />
+      </div>
+
+      <div class="actions">
+        <button id="startBtn" class="btn primary">Bắt đầu làm bài</button>
+        <button id="demoBtn" class="btn secondary" title="Chạy nhanh demo">Demo</button>
+      </div>
+    </section>
+
+    <section class="card quiz-card hidden" id="quiz">
+      <div class="quiz-header">
+        <div class="progress-info">
+          <div id="progressText" class="progress-text">Câu 1/10</div>
+          <div class="progress">
+            <div id="progressBar" class="progress-bar" style="width:0%"></div>
+          </div>
+        </div>
+        <div class="timer" aria-live="polite">
+          <svg class="clock" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 1a11 11 0 1 0 11 11A11.013 11.013 0 0 0 12 1zm1 12.414V7h-2v6.086l4.243 4.243 1.414-1.414z"/></svg>
+          <span id="timeRemaining">00:00</span>
         </div>
       </div>
 
-      <div id="result" class="card hidden">
-        <h2>Kết quả</h2>
-        <div id="score"></div>
-        <button id="restartBtn">Làm lại</button>
+      <div id="questionArea" class="question-area"></div>
+
+      <div class="quiz-footer">
+        <div class="nav">
+          <button id="prevBtn" class="btn neutral">Trước</button>
+          <button id="nextBtn" class="btn neutral">Sau</button>
+        </div>
+        <div class="submit-area">
+          <button id="submitBtn" class="btn primary large">Nộp bài</button>
+        </div>
       </div>
-    </main>
-  </div>
+    </section>
+
+    <section class="card result-card hidden" id="result">
+      <h2 class="card-title">Kết quả</h2>
+      <p id="score" class="score-text"></p>
+      <div class="actions">
+        <button id="restartBtn" class="btn secondary">Làm lại</button>
+        <a id="downloadBtn" class="btn neutral" style="display:none" download>Download XLSX</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <small>© <span id="year"></span> QuizPro • Built with HTML, CSS & JavaScript</small>
+    </div>
+  </footer>
 
   <script src="app.js"></script>
 </body>
