@@ -1,0 +1,20 @@
+:root {
+  --bg: #f7f9fc;
+  --card: #fff;
+  --accent: #0366d6;
+}
+body { font-family: system-ui, Arial; background: var(--bg); margin:0; padding:20px; color:#222; }
+.container { max-width:900px; margin:0 auto; }
+.card { background:var(--card); padding:16px; border-radius:8px; box-shadow:0 1px 4px rgba(0,0,0,0.06); margin-bottom:16px; }
+.hidden { display:none; }
+header h1 { margin:0 0 8px 0; }
+#questionArea { margin-top:12px; }
+.question { margin-bottom:12px; }
+.options label { display:block; margin:6px 0; padding:8px; border:1px solid #eee; border-radius:6px; cursor:pointer; }
+.options input { margin-right:8px; }
+#nav { margin-top:12px; }
+button { background:var(--accent); color:white; border:none; padding:8px 12px; border-radius:6px; cursor:pointer; }
+button.secondary { background:#666; }
+.modal { position:fixed; left:0; top:0; right:0; bottom:0; background:rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center; }
+.modal-content { width:360px; background:white; padding:16px; border-radius:8px; }
+.muted { font-size:12px; color:#666; margin-top:8px; }

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Quiz Trắc Nghiệm</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Web Trắc Nghiệm</h1>
+      <div id="status"></div>
+    </header>
+
+    <main id="main">
+      <div id="setup" class="card">
+        <h2>Cấu hình bài thi</h2>
+        <label>Số câu hỏi: <input id="numQuestions" type="number" min="1" value="10" /></label><br/>
+        <label>Thời gian (phút): <input id="timeLimit" type="number" min="1" value="15" /></label><br/>
+        <label>Tên thí sinh: <input id="candidateName" type="text" /></label><br/>
+        <label>Email (tuỳ chọn): <input id="candidateEmail" type="email" /></label><br/>
+        <button id="startBtn">Bắt đầu làm bài</button>
+        <button id="adminBtn">Admin</button>
+      </div>
+
+      <div id="quiz" class="card hidden">
+        <div id="timer">Thời gian: <span id="timeRemaining">00:00</span></div>
+        <div id="questionArea"></div>
+        <div id="nav">
+          <button id="prevBtn">Trước</button>
+          <button id="nextBtn">Sau</button>
+          <button id="submitBtn">Nộp bài</button>
+        </div>
+      </div>
+
+      <div id="result" class="card hidden">
+        <h2>Kết quả</h2>
+        <div id="score"></div>
+        <button id="restartBtn">Làm lại</button>
+      </div>
+    </main>
+  </div>
+
+  <!-- Admin modal simple -->
+  <div id="adminModal" class="modal hidden">
+    <div class="modal-content">
+      <h3>Admin - Thiết lập (mật khẩu)</h3>
+      <label>Mật khẩu admin: <input id="adminPasswordInput" type="password" /></label><br/>
+      <label>Time open (ISO, ví dụ 2025-12-28T08:00): <input id="openTimeInput" type="text" placeholder="YYYY-MM-DDTHH:mm" /></label><br/>
+      <label>Time close (ISO): <input id="closeTimeInput" type="text" placeholder="YYYY-MM-DDTHH:mm" /></label><br/>
+      <button id="saveAdminBtn">Lưu</button>
+      <button id="closeAdminBtn">Đóng</button>
+      <p class="muted">Lưu ý: Đây là admin client-side để demo. Nên lưu cấu hình thực trong Google Apps Script để bảo mật.</p>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

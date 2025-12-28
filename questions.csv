@@ -1,0 +1,4 @@
+id,question,A,B,C,D,answer
+q1,Thủ đô Việt Nam là?,Hà Nội,TP HCM,Đà Nẵng,Hải Phòng,A
+q2,Ngôn ngữ lập trình phổ biến trên web là?,Python,JavaScript,Go,Rust,B
+q3,HTML dùng để làm gì?,Tạo cấu trúc trang web,Kiểm soát cơ sở dữ liệu,Thiết kế hệ điều hành,Quản lý mạng,A
