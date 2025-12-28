@@ -3,95 +3,175 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Web Trắc Nghiệm</title>
-  <link rel="stylesheet" href="styles.css" />
+  <title>QuizPro — Web Trắc Nghiệm</title>
+  <style>
+    :root{--bg:#f4f7fb;--card:#fff;--accent:#0b74ff;--muted:#667085;--radius:12px;--shadow:0 8px 20px rgba(17,24,39,0.06);--max-w:980px}
+    *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Arial;background:linear-gradient(180deg,#f7fbff 0,#f4f7fb 100%);color:#0b1220;-webkit-font-smoothing:antialiased}
+    .container{max-width:var(--max-w);margin:0 auto;padding:22px}
+    .site-header{background:linear-gradient(90deg,#0b74ff 0,#0066cc 100%);color:#fff;padding:18px;border-radius:12px;margin-bottom:18px;box-shadow:0 6px 18px rgba(11,116,255,0.08)}
+    .site-header h1{margin:0;font-size:20px}
+    .site-header .status{opacity:.95;background:rgba(255,255,255,0.08);padding:6px 10px;border-radius:10px;font-size:14px;margin-top:6px;display:inline-block}
+    .main{display:grid;grid-template-columns:1fr;gap:18px}
+    .card{background:var(--card);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
+    .control-card .row{display:flex;flex-direction:column;margin-bottom:12px}
+    label{font-size:13px;color:var(--muted);margin-bottom:6px}
+    input[type="number"],input[type="text"],input[type="email"]{padding:10px;border-radius:10px;border:1px solid #e6eef8;background:#fbfdff}
+    .actions{display:flex;gap:10px;margin-top:8px}
+    .btn{padding:10px 14px;border-radius:10px;border:none;cursor:pointer;font-weight:600}
+    .btn.primary{background:var(--accent);color:#fff;box-shadow:0 6px 18px rgba(11,116,255,0.12)}
+    .btn.neutral{background:#f2f4f7;color:#111827;border:1px solid #e6e9ee}
+    .quiz-card .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+    .progress{height:10px;background:#eef3ff;border-radius:999px;overflow:hidden}
+    .bar{height:100%;background:linear-gradient(90deg,var(--accent),#00a3ff);width:0}
+    .timer{font-weight:700;color:var(--accent)}
+    .question-area p{font-size:16px}
+    .options label{display:block;padding:12px;border-radius:8px;border:1px solid #e6eef8;margin-bottom:8px;background:#fff;cursor:pointer}
+    .options label:hover{box-shadow:0 8px 20px rgba(11,116,255,0.06)}
+    .hidden{display:none}
+    footer{margin-top:16px;text-align:center;color:var(--muted);font-size:13px}
+    @media(min-width:900px){.main{grid-template-columns:380px 1fr}.control-card{position:sticky;top:22px}}
+  </style>
 </head>
 <body>
-  <header class="site-header">
-    <div class="container header-inner">
-      <div class="brand">
-        <h1>Quiz<span class="accent">Pro</span></h1>
-        <p class="tagline">Web trắc nghiệm — nhanh, gọn, chuyên nghiệp</p>
-      </div>
-      <div class="meta">
-        <div id="status" class="status">Đang tải...</div>
-      </div>
-    </div>
-  </header>
+  <div class="container">
+    <header class="site-header">
+      <h1>QuizPro — Web Trắc Nghiệm</h1>
+      <div id="status" class="status">Đang tải...</div>
+    </header>
 
-  <main class="container main-content" id="main">
-    <section class="card control-card" id="setup">
-      <h2 class="card-title">Cấu hình bài thi</h2>
+    <main class="main">
+      <section class="card control-card" id="setup">
+        <h2 style="margin:0 0 10px 0">Cấu hình bài thi</h2>
+        <div class="row">
+          <label for="numQuestions">Số câu hỏi</label>
+          <input id="numQuestions" type="number" min="1" value="10" />
+        </div>
+        <div class="row">
+          <label for="timeLimit">Thời gian (phút)</label>
+          <input id="timeLimit" type="number" min="1" value="15" />
+        </div>
+        <div class="row">
+          <label for="candidateName">Tên thí sinh</label>
+          <input id="candidateName" type="text" placeholder="Họ và tên" />
+        </div>
+        <div class="row">
+          <label for="candidateEmail">Email (tuỳ chọn)</label>
+          <input id="candidateEmail" type="email" placeholder="abc@domain.com" />
+        </div>
+        <div class="actions">
+          <button id="startBtn" class="btn primary">Bắt đầu làm bài</button>
+          <button id="demoBtn" class="btn neutral">Demo</button>
+        </div>
+      </section>
 
-      <div class="form-row">
-        <label for="numQuestions">Số câu hỏi</label>
-        <input id="numQuestions" type="number" min="1" value="10" />
-      </div>
+      <section class="card quiz-card hidden" id="quiz">
+        <div class="header">
+          <div style="flex:1">
+            <div id="progressText" style="font-size:14px;color:#667085;margin-bottom:8px">Câu 1/10</div>
+            <div class="progress"><div id="progressBar" class="bar"></div></div>
+          </div>
+          <div class="timer" id="timeRemaining" style="margin-left:16px">00:00</div>
+        </div>
 
-      <div class="form-row">
-        <label for="timeLimit">Thời gian (phút)</label>
-        <input id="timeLimit" type="number" min="1" value="15" />
-      </div>
+        <div id="questionArea" class="question-area"></div>
 
-      <div class="form-row">
-        <label for="candidateName">Tên thí sinh</label>
-        <input id="candidateName" type="text" placeholder="Họ và tên" />
-      </div>
-
-      <div class="form-row">
-        <label for="candidateEmail">Email (tuỳ chọn)</label>
-        <input id="candidateEmail" type="email" placeholder="abc@domain.com" />
-      </div>
-
-      <div class="actions">
-        <button id="startBtn" class="btn primary">Bắt đầu làm bài</button>
-        <button id="demoBtn" class="btn secondary" title="Chạy nhanh demo">Demo</button>
-      </div>
-    </section>
-
-    <section class="card quiz-card hidden" id="quiz">
-      <div class="quiz-header">
-        <div class="progress-info">
-          <div id="progressText" class="progress-text">Câu 1/10</div>
-          <div class="progress">
-            <div id="progressBar" class="progress-bar" style="width:0%"></div>
+        <div style="display:flex;justify-content:space-between;margin-top:14px;align-items:center">
+          <div>
+            <button id="prevBtn" class="btn neutral">Trước</button>
+            <button id="nextBtn" class="btn neutral">Sau</button>
+          </div>
+          <div>
+            <button id="submitBtn" class="btn primary">Nộp bài</button>
           </div>
         </div>
-        <div class="timer" aria-live="polite">
-          <svg class="clock" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 1a11 11 0 1 0 11 11A11.013 11.013 0 0 0 12 1zm1 12.414V7h-2v6.086l4.243 4.243 1.414-1.414z"/></svg>
-          <span id="timeRemaining">00:00</span>
+      </section>
+
+      <section class="card hidden" id="result">
+        <h2 style="margin-top:0">Kết quả</h2>
+        <p id="score" style="font-weight:700;color:#16a34a;font-size:18px"></p>
+        <div style="margin-top:8px">
+          <button id="restartBtn" class="btn neutral">Làm lại</button>
         </div>
-      </div>
+      </section>
+    </main>
 
-      <div id="questionArea" class="question-area"></div>
+    <footer><small>© <span id="yr"></span> QuizPro</small></footer>
+  </div>
 
-      <div class="quiz-footer">
-        <div class="nav">
-          <button id="prevBtn" class="btn neutral">Trước</button>
-          <button id="nextBtn" class="btn neutral">Sau</button>
-        </div>
-        <div class="submit-area">
-          <button id="submitBtn" class="btn primary large">Nộp bài</button>
-        </div>
-      </div>
-    </section>
+  <script>
+    // Single-file JS (inline) — updated UI behavior
+    const GAS_ENDPOINT = 'https://script.google.com/macros/s/REPLACE_WITH_YOUR_DEPLOY_ID/exec';
+    let questions = [], quizQ = [], state = {current:0,answers:{},timeLeft:0,interval:null};
+    document.getElementById('yr').textContent = new Date().getFullYear();
+    document.addEventListener('DOMContentLoaded', ()=> {
+      loadCSV('questions.csv').then(d=>{questions=d; document.getElementById('status').textContent = 'Đã load ' + d.length + ' câu hỏi.'}).catch(e=>{console.error(e); document.getElementById('status').textContent='Lỗi load CSV'});
+      document.getElementById('startBtn').addEventListener('click', ()=>{ const n=Number(document.getElementById('numQuestions').value)||10; const t=Number(document.getElementById('timeLimit').value)||15; startQuiz(n,t); });
+      document.getElementById('demoBtn').addEventListener('click', ()=> startQuiz(3,5));
+      document.getElementById('prevBtn').addEventListener('click', ()=> { if(state.current>0){state.current--; renderQuestion(); updateProgress(); }});
+      document.getElementById('nextBtn').addEventListener('click', ()=> { if(state.current < quizQ.length-1){state.current++; renderQuestion(); updateProgress(); }});
+      document.getElementById('submitBtn').addEventListener('click', submitQuiz);
+      document.getElementById('restartBtn').addEventListener('click', ()=> { document.getElementById('result').classList.add('hidden'); document.getElementById('setup').classList.remove('hidden'); });
+    });
 
-    <section class="card result-card hidden" id="result">
-      <h2 class="card-title">Kết quả</h2>
-      <p id="score" class="score-text"></p>
-      <div class="actions">
-        <button id="restartBtn" class="btn secondary">Làm lại</button>
-        <a id="downloadBtn" class="btn neutral" style="display:none" download>Download XLSX</a>
-      </div>
-    </section>
-  </main>
+    function loadCSV(url){ return fetch(url).then(r=>{ if(!r.ok) throw new Error('CSV fetch '+r.status); return r.text();}).then(parseCSV); }
+    function parseCSV(text){
+      const lines = text.split(/\\r?\\n/).map(l=>l.trim()).filter(Boolean);
+      if(!lines.length) return [];
+      lines.shift();
+      return lines.map(line => {
+        const cols = csvLineToArray(line);
+        return {id:(cols[0]||'').trim(), question:(cols[1]||'').trim(), A:(cols[2]||'').trim(), B:(cols[3]||'').trim(), C:(cols[4]||'').trim(), D:(cols[5]||'').trim(), answer:(cols[6]||'').trim()};
+      });
+    }
+    function csvLineToArray(line){
+      const out=[]; let cur='', inQ=false;
+      for(let i=0;i<line.length;i++){ const ch=line[i];
+        if(ch === '"'){ if(inQ && i+1<line.length && line[i+1]==='"'){ cur+='"'; i++; } else inQ=!inQ; }
+        else if(ch===',' && !inQ){ out.push(cur); cur=''; } else cur+=ch;
+      }
+      out.push(cur); return out;
+    }
 
-  <footer class="site-footer">
-    <div class="container">
-      <small>© <span id="year"></span> QuizPro • Built with HTML, CSS & JavaScript</small>
-    </div>
-  </footer>
-
-  <script src="app.js"></script>
+    function startQuiz(n,t){
+      if(!questions || !questions.length){ alert('Chưa có câu hỏi'); return; }
+      quizQ = shuffle(questions.slice()).slice(0,Math.min(n,questions.length));
+      state = {current:0,answers:{},timeLeft: Math.max(1, Math.floor(t))*60, interval:null};
+      document.getElementById('setup').classList.add('hidden');
+      document.getElementById('quiz').classList.remove('hidden');
+      updateProgress(); renderQuestion(); document.getElementById('timeRemaining').textContent = fmtTime(state.timeLeft); startTimer();
+    }
+    function renderQuestion(){
+      const q = quizQ[state.current];
+      const area = document.getElementById('questionArea'); area.innerHTML='';
+      if(!q){ area.innerHTML='<p>Không có câu</p>'; return; }
+      const p = document.createElement('p'); p.textContent = q.question; area.appendChild(p);
+      const opts = document.createElement('div'); ['A','B','C','D'].forEach(letter=>{
+        const lbl = document.createElement('label'); lbl.className='opt';
+        lbl.style.display='block'; lbl.style.padding='10px'; lbl.style.marginBottom='8px'; lbl.style.border='1px solid #e6eef8'; lbl.style.borderRadius='8px';
+        const input = document.createElement('input'); input.type='radio'; input.name='opt'; input.value=letter; input.style.marginRight='8px';
+        if(state.answers[q.id] === letter) input.checked=true;
+        input.addEventListener('change', ()=> state.answers[q.id]=letter);
+        lbl.appendChild(input); lbl.appendChild(document.createTextNode(letter + '. ' + (q[letter]||'')));
+        opts.appendChild(lbl);
+      }); area.appendChild(opts);
+    }
+    function updateProgress(){ const idx=state.current+1; const total=quizQ.length||1; document.getElementById('progressText').textContent='Câu '+idx+'/'+total; document.getElementById('progressBar').style.width = Math.round((idx/total)*100)+'%'; }
+    function startTimer(){ clearInterval(state.interval); state.interval = setInterval(()=>{ if(state.timeLeft<=0){ clearInterval(state.interval); alert('Hết giờ, nộp tự động'); submitQuiz(); return; } state.timeLeft--; document.getElementById('timeRemaining').textContent = fmtTime(state.timeLeft); },1000); }
+    function submitQuiz(){
+      clearInterval(state.interval);
+      let correct=0; const ans=[];
+      quizQ.forEach(q=>{ const sel = state.answers[q.id]||''; if(sel && sel===q.answer) correct++; ans.push({id:q.id,selected:sel});});
+      document.getElementById('quiz').classList.add('hidden');
+      document.getElementById('result').classList.remove('hidden');
+      document.getElementById('score').textContent = 'Bạn được '+correct+' / '+quizQ.length;
+      const payload = { timestamp:new Date().toISOString(), name:document.getElementById('candidateName').value||'Anonymous', email:document.getElementById('candidateEmail').value||'', score:correct, total:quizQ.length, answers:ans };
+      if(GAS_ENDPOINT && GAS_ENDPOINT.indexOf('REPLACE_WITH')===-1){
+        fetch(GAS_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then(r=>r.json()).then(()=>{}).catch(()=>{});
+      }
+    }
+    function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+    function fmtTime(s){ const m=Math.floor(s/60); const sec=s%60; return String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0'); }
+    window.quizDebug={startQuiz,questions,quizQ,state};
+  </script>
 </body>
 </html>
